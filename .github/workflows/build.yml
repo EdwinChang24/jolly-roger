@@ -75,7 +75,7 @@ jobs:
       - name: Normalize image name
         id: image_name
         run: |
-          echo "image_name_lower=$(echo \"$GITHUB_REPOSITORY\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "image_name_lower=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -132,7 +132,7 @@ jobs:
       - name: Normalize image name
         id: image_name
         run: |
-          echo "image_name_lower=$(echo \"$GITHUB_REPOSITORY\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "image_name_lower=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       - name: Extract metadata for Docker
         id: meta
         if: github.ref == 'refs/heads/main'
