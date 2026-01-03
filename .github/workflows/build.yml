@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: read
@@ -73,11 +72,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           install: true # make buildx the default
+      - name: Normalize image name
+        id: image_name
+        run: |
+          echo "image_name_lower=$(echo \"$GITHUB_REPOSITORY\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name_lower }}
       - name: Log in to the Container registry
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
@@ -93,7 +96,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push=${{ github.ref == 'refs/heads/main' }},push-by-digest=true,name-canonical=true,oci-mediatypes=true
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name_lower }},push=${{ github.ref == 'refs/heads/main' }},push-by-digest=true,name-canonical=true,oci-mediatypes=true
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }} # mode=max means cache intermediate images
           build-args: |
@@ -101,7 +104,7 @@ jobs:
       - name: Export digest
         run: |
           mkdir -p ${{ runner.temp }}/digests
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" >> ${{ runner.temp }}/digests/digest
+          echo "${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name_lower }}@${{ steps.build.outputs.digest }}" >> ${{ runner.temp }}/digests/digest
       - name: Upload digest
         uses: actions/upload-artifact@v6
         with:
@@ -126,12 +129,16 @@ jobs:
         with:
           pattern: digests-*
           path: ${{ runner.temp }}/digests
+      - name: Normalize image name
+        id: image_name
+        run: |
+          echo "image_name_lower=$(echo \"$GITHUB_REPOSITORY\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       - name: Extract metadata for Docker
         id: meta
         if: github.ref == 'refs/heads/main'
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name_lower }}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
         env:
@@ -174,4 +181,4 @@ jobs:
       - name: Inspect image
         if: github.ref == 'refs/heads/main'
         run: |
-          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}'
+          docker buildx imagetools inspect '${{ env.REGISTRY }}/${{ steps.image_name.outputs.image_name_lower }}:${{ steps.meta.outputs.version }}'
